@@ -1,15 +1,15 @@
 # SOC Investigations Portfolio
 
-A collection of end-to-end security incident investigations conducted against a **synthetic enterprise telemetry environment** I designed and generated myself — from environment/data architecture through detection, triage, and KQL-based investigation in Azure Data Explorer.
+A collection of end-to-end security incident investigations conducted against a **synthetic enterprise telemetry environment** I designed and generated myself, from environment/data architecture through detection, triage, and KQL-based investigation in Azure Data Explorer.
 
-> **Why synthetic data?** This lets me demonstrate the full lifecycle of detection engineering and SOC analysis — building the environment, generating realistic multi-source telemetry with injected attack scenarios, and then investigating those scenarios "blind" (without ground truth) — without touching any real organization's data.
+> **Why synthetic data?** This lets me demonstrate the full lifecycle of detection engineering and SOC analysis - building the environment, generating realistic multi-source telemetry with injected attack scenarios and then investigating those scenarios "blind" (without ground truth) without touching any real organization's data.
 
 ## What's in this repo
 
 | Folder | Contents |
 |---|---|
 | [`environment/`](environment/environment-design.md) | Full design of the synthetic enterprise: users, hosts, network segments, telemetry sources/schemas, the 10 injected attack scenarios, benign noise model, and dataset generation architecture |
-| [`incidents/`](incidents/) | Individual incident write-ups — each includes the alert, investigation timeline, KQL queries used, scope/impact assessment, and remediation recommendations |
+| [`incidents/`](incidents/) | Individual incident write-ups, each includes the alert, investigation timeline, KQL queries used, scope/impact assessment, and remediation recommendations |
 | [`docs/methodology.md`](docs/methodology.md) | My general approach to triage and investigation |
 
 ## Skills demonstrated
