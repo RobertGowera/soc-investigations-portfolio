@@ -1,0 +1,59 @@
+// INC-2026-4471 — Business Email Compromise via Credential Phishing
+// Queries run in Azure Data Explorer against the Contoso Meridian synthetic dataset
+
+// ---------------------------------------------------------------------------
+// Step 1 — Pull the flagged sign-in and confirm risk context
+// ---------------------------------------------------------------------------
+AADSignInLogs
+| where UserPrincipalName == "gregory.ortiz@contosomeridian.com"
+| where TimeGenerated between (datetime(2026-08-05 00:00) .. datetime(2026-08-06 00:00))
+| project TimeGenerated, AppDisplayName, IPAddress, Location, DeviceDetail,
+          RiskLevelDuringSignIn, RiskState, AuthenticationRequirement, ResultDescription
+| order by TimeGenerated asc
+
+// ---------------------------------------------------------------------------
+// Step 2 — Check for a preceding phishing delivery
+// (an unexpected risky sign-in almost always has an email entry point)
+// ---------------------------------------------------------------------------
+EmailEvents
+| where RecipientAddress == "gregory.ortiz@contosomeridian.com"
+| where TimeGenerated between (datetime(2026-08-05 00:00) .. datetime(2026-08-05 10:00))
+| project TimeGenerated, SenderAddress, Subject, URLs, SPFResult, DKIMResult, DMARCResult, ThreatType
+| order by TimeGenerated asc
+
+// ---------------------------------------------------------------------------
+// Step 3 — Confirm the user actually interacted with the phishing link
+// ---------------------------------------------------------------------------
+ProxyLogs
+| where User == "gortiz"   // SamAccountName — verify against UserDirectory
+| where TimeGenerated between (datetime(2026-08-05 09:00) .. datetime(2026-08-05 10:00))
+| project TimeGenerated, URL, Domain, Category, Action
+
+// ---------------------------------------------------------------------------
+// Step 4 — Close the gap between sign-in and the fraud email
+// (this is the step that turns "account compromise" into "active BEC")
+// ---------------------------------------------------------------------------
+AADAuditLogs
+| where InitiatedBy == "gregory.ortiz@contosomeridian.com"
+| where TimeGenerated between (datetime(2026-08-05 09:43) .. datetime(2026-08-05 13:00))
+| project TimeGenerated, OperationName, TargetResources, Result
+| order by TimeGenerated asc
+
+// ---------------------------------------------------------------------------
+// Step 5 — Scope check: was anyone else targeted from the same infrastructure?
+// ---------------------------------------------------------------------------
+union AADSignInLogs, ProxyLogs, EmailEvents
+| where IPAddress == "103.45.67.12"
+    or SrcIP == "103.45.67.12"
+    or SenderAddress == "billing@vendorcorp-payments.com"
+| project TimeGenerated, UserPrincipalName, User, RecipientAddress, IPAddress, SrcIP
+| order by TimeGenerated asc
+
+// ---------------------------------------------------------------------------
+// Step 6 — Confirm the outbound fraud email itself
+// ---------------------------------------------------------------------------
+EmailEvents
+| where SenderAddress == "gregory.ortiz@contosomeridian.com"
+| where TimeGenerated between (datetime(2026-08-05 09:43) .. datetime(2026-08-05 14:00))
+| project TimeGenerated, RecipientAddress, Subject, ThreatType, DeliveryAction
+| order by TimeGenerated asc
