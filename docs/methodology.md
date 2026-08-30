@@ -2,11 +2,11 @@
 
 General approach I follow when triaging an alert, used consistently across the incidents in this repo.
 
-## 1. Start from the alert, not the conclusion
-An alert tells you one thing happened — it rarely tells you the whole story. Treat the alert as the entry point into an investigation, not the investigation itself.
+## 1. Start from the alert
+An alert tells you one thing happened, it rarely tells you the whole story. Treat the alert as the entry point into an investigation, not the investigation itself.
 
 ## 2. Reconstruct the timeline before judging impact
-Before deciding severity or writing remediation steps, pull every relevant event before and after the alert timestamp across the sources that plausibly connect to it (identity, email, endpoint, network). Attacks are chains — the alert is usually one link, not the first or the last.
+Before deciding the severity or writing remediation steps, get every relevant event before and after the alert timestamp across the sources that connect to it (identity, email, endpoint, network). Attacks are chains, the alert is usually one link, not the first or the last.
 
 ## 3. Always check what happened *after* the initial trigger
 The most common mistake in triage is stopping at "here's how they got in." A compromised account with no follow-up audit-log review looks resolved but isn't. Second-order actions (mailbox rules, new admin roles, scheduled tasks, lateral connections) are often where the actual objective lives.
