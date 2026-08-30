@@ -1,8 +1,8 @@
-# Synthetic SOC Telemetry Environment — Design Document
+# Synthetic SOC Telemetry Environment - Design Document
 
-**Purpose:** Define a fictitious enterprise environment as the basis for generating synthetic security telemetry (CSV, destined for Azure Data Explorer) used for detection engineering practice, SOC analyst training, and correlation/hunting exercises. No real data, no real IOCs, no operational attack tooling — this is a data-modeling exercise.
+**Purpose:** Define a fictitious enterprise environment as the basis for generating synthetic security telemetry (CSV, destined for Azure Data Explorer) used for detection engineering practice, SOC analyst training, and correlation/hunting exercises. No real data, no real IOCs, no operational attack tooling - this is a data-modeling exercise.
 
-Fictitious company: **"Contoso Meridian"** — a mid-size financial services firm (~2,500 employees), HQ + 2 branch offices + hybrid cloud (Azure AD / Entra ID + AWS).
+Fictitious company: **"Contoso Meridian"**  A mid-size financial services firm (~2,500 employees), HQ + 2 branch offices + hybrid cloud (Azure AD / Entra ID + AWS).
 
 ---
 
@@ -162,7 +162,7 @@ Each scenario is designed to be generated as a coherent, multi-source event sequ
 - Difficulty: Easy once triggered, but brute-force phase easily missed if RDP logs aren't monitored
 
 **4. Insider Data Exfiltration**
-- Initial access: N/A — legitimate disgruntled employee (HR dept, resignation pending)
+- Initial access: N/A - legitimate disgruntled employee (HR dept, resignation pending)
 - Chain: Off-hours access to HR SharePoint beyond normal scope (T1213) → bulk download of PII files → upload to personal cloud storage via browser (T1567.002) → USB copy as backup channel (T1052.001)
 - Techniques: T1213, T1567.002, T1052.001
 - Affected users: 1 HR employee
@@ -236,13 +236,13 @@ Each scenario is designed to be generated as a coherent, multi-source event sequ
 ## D. Benign Activity (background noise)
 
 To make detection non-trivial, generate realistic volume of ordinary activity across the same schemas:
-- **Auth patterns:** daily 8–9am login wave, lunchtime badge/VPN dip, normal MFA prompts, occasional genuine mistyped-password failures (1–3 per user per month), legitimate travel-based logins for a subset of users (sales/execs)
+- **Auth patterns:** daily 8-9am login wave, lunchtime badge/VPN dip, normal MFA prompts, occasional genuine mistyped-password failures (1–3 per user per month), legitimate travel-based logins for a subset of users (sales/execs)
 - **Process/endpoint noise:** routine app launches (Office, Teams, Chrome, Slack), scheduled patch/update tasks, normal PowerShell use by IT/DevOps (unencoded, signed scripts), routine service restarts
 - **Network noise:** normal SaaS traffic (O365, Salesforce, GitHub), streaming/news sites hitting proxy category filters (not blocked), normal DNS resolution patterns, regular backup jobs at night, vulnerability scanner sweeping subnets monthly (should itself resemble "recon" and be a good false-positive teaching case)
 - **Email noise:** normal internal/external business correspondence, legitimate marketing emails, occasional benign spam caught by the gateway, calendar invites
 - **Cloud noise:** routine IaC deployments during business hours, normal S3/Blob read/write from applications, scheduled Lambda/Function executions, routine IAM role assumption by automation
 - **Admin noise:** legitimate PAM-checkout admin sessions, scheduled AD group membership changes (onboarding/offboarding), patch Tuesday reboots
-- **Helpdesk noise:** password resets, account unlocks, software install requests — genuine 4720/4724/4767 events unrelated to any attack
+- **Helpdesk noise:** password resets, account unlocks, software install requests - genuine 4720/4724/4767 events unrelated to any attack
 
 Recommended ratio: benign:malicious event volume roughly 500:1 to 2000:1 depending on the table, mirroring real SOC signal-to-noise.
 
@@ -250,10 +250,10 @@ Recommended ratio: benign:malicious event volume roughly 500:1 to 2000:1 dependi
 
 Core entity graph, all tables should carry keys that allow joins in ADX:
 
-- **User ↔ Host:** `PrimaryUser` in AssetInventory joins to `SubjectUserName`/`TargetUserName` in WindowsEvents; a user may log into multiple hosts (helpdesk shared machines, RDP jump hosts) — model this explicitly for a few "hub" hosts.
+- **User ↔ Host:** `PrimaryUser` in AssetInventory joins to `SubjectUserName`/`TargetUserName` in WindowsEvents; a user may log into multiple hosts (helpdesk shared machines, RDP jump hosts) - model this explicitly for a few "hub" hosts.
 - **User ↔ IP:** AADSignInLogs and VPNLogs both carry `User` + `IPAddress`; a user's IP should be consistent with their assigned VPN pool / office subnet / occasional legitimate remote IP, with attack scenarios deliberately breaking this pattern (impossible travel, Tor/VPS ranges).
 - **Host ↔ IP:** AssetInventory is the canonical host→IP mapping; DHCP lease changes should occasionally reassign IPs (introduce mild realism/challenge) but keep most hosts on static-ish internal IPs.
-- **Process/Session correlation:** Sysmon `LogonId` ties process creation (event 1) to the originating logon session (event 4624), which ties back to `SubjectUserName` — this chain is essential for tracing lateral movement (e.g., Scenario 3, 6, 9).
+- **Process/Session correlation:** Sysmon `LogonId` ties process creation (event 1) to the originating logon session (event 4624), which ties back to `SubjectUserName` - this chain is essential for tracing lateral movement (e.g., Scenario 3, 6, 9).
 - **Cloud identity ↔ on-prem identity:** `UserPrincipalName` (Entra ID) maps 1:1 to `SamAccountName` (on-prem AD) via the hybrid identity table — essential for BEC/OAuth scenarios that need to connect a cloud sign-in back to an on-prem account context (e.g., is this a privileged on-prem account too?).
 - **Email ↔ Identity ↔ Endpoint:** `RecipientAddress` in EmailEvents → `UserPrincipalName` → device the user opens the message on (`DeviceId` in EDRAlerts) → completes phishing-to-execution chains (Scenarios 1, 9).
 - **Network flow chaining:** FirewallLogs/ProxyLogs `SrcIP`/`DstIP` should be joinable to AssetInventory for internal hosts and left as raw external IPs otherwise (a small curated pool of "attacker infrastructure" IPs/domains reused across relevant malicious events for consistency).
@@ -262,7 +262,7 @@ Core entity graph, all tables should carry keys that allow joins in ADX:
 ## F. Dataset Generation Architecture
 
 1. **Ground-truth layer:** Define entities (users, hosts, service accounts, IPs, cloud resources) once as reference tables/dictionaries — single source of truth referenced by every generator function.
-2. **Timeline engine:** Generate a shared master timeline (e.g., 30–90 days). Benign activity is generated first as a continuous baseline per entity (daily patterns, weekday/weekend variation, a few holidays). Attack scenarios are then injected as sub-timelines at randomized (but plausible — e.g., business hours for phishing, off-hours for exfil) start points, with each scenario's chain generating coherent, causally-ordered events across the relevant schemas with realistic time deltas between steps (seconds for process spawning, hours for later-stage exfil).
+2. **Timeline engine:** Generate a shared master timeline (e.g., 30-90 days). Benign activity is generated first as a continuous baseline per entity (daily patterns, weekday/weekend variation, a few holidays). Attack scenarios are then injected as sub-timelines at randomized (but plausible e.g., business hours for phishing, off-hours for exfil) start points, with each scenario's chain generating coherent, causally-ordered events across the relevant schemas with realistic time deltas between steps (seconds for process spawning, hours for later-stage exfil).
 3. **Per-scenario event generators:** One function per scenario producing rows for every telemetry table it touches, parameterized by which user/host/IP instance to use (drawn from ground truth), so the same scenario "template" can be replayed multiple times with different entities if more incident volume is wanted later.
 4. **Noise generator:** Statistical/probabilistic models (Poisson-ish arrival for logons, normal distribution around a login-time mean, weighted random choice for URL categories, etc.) rather than pure uniform-random, so the data has realistic clustering instead of looking flat/synthetic.
 5. **Consistency pass:** After generation, validate referential integrity (every SubjectUserName exists in UserDirectory, every IP used by an internal host matches AssetInventory unless intentionally external/attacker infra, timestamps are monotonic within a session).
@@ -270,16 +270,4 @@ Core entity graph, all tables should carry keys that allow joins in ADX:
 7. **Export layer:** One CSV per schema table (Section B), consistent column ordering, UTC ISO 8601 timestamps, sized appropriately for ADX ingestion (chunk if needed). Column types documented alongside for `.create table` KQL statements.
 8. **Reproducibility:** Seeded RNG so the same design regenerates identically; a config file (users/hosts count, day range, scenario list/frequency) drives the generator so scale can be adjusted without rewriting logic.
 
-## G. Training Progression
-
-Suggested phased rollout once data exists:
-1. **Phase 1 — Single-source detection:** Analyst works from one table at a time (e.g., WindowsEvents only) to find the obvious high-signal scenarios (RDP brute force, break-glass misuse).
-2. **Phase 2 — Two-source correlation:** Combine two tables (e.g., AADSignInLogs + EmailEvents) to catch scenarios like BEC/impossible travel.
-3. **Phase 3 — Full-stack hunting:** All tables available; analyst must pivot across identity/host/network/cloud to find low-signal scenarios (Golden Ticket, OAuth consent phishing, S3 misconfig).
-4. **Phase 4 — Noise-heavy realistic ratio:** Reduce hinting, increase benign:malicious ratio to realistic SOC levels, timed exercises.
-5. **Phase 5 — Blind scenario injection:** New scenario instances (same generator, different entities/timing) not previously seen, testing generalized detection logic/KQL queries rather than memorized patterns.
-
 ---
-
-**Status: awaiting your approval before generating any CSV telemetry.**
-Once approved, next step will be building the dataset generation code (per Section F) and exporting the CSVs per the schemas in Section B.
